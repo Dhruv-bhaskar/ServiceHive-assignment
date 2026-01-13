@@ -81,6 +81,9 @@ const bidSlice = createSlice({
     clearSuccess: (state) => {
       state.success = null;
     },
+    clearBids: (state) => {
+      state.bids = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -144,5 +147,5 @@ const bidSlice = createSlice({
   },
 });
 
-export const { clearError, clearSuccess } = bidSlice.actions;
+export const { clearError, clearSuccess, clearBids } = bidSlice.actions;
 export default bidSlice.reducer;

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams } from 'react-router-dom'
-import { fetchGigById } from '../store/slices/gigSlice'
-import { submitBid, fetchBidsForGig, hireFreelancer, clearSuccess } from '../store/slices/bidSlice'
+import { fetchGigById, clearCurrentGig } from '../store/slices/gigSlice'
+import { submitBid, fetchBidsForGig, hireFreelancer, clearSuccess, clearBids } from '../store/slices/bidSlice'
 
 function GigDetails() {
   const dispatch = useDispatch()
@@ -19,11 +19,24 @@ function GigDetails() {
 
   useEffect(() => {
     dispatch(fetchGigById(id))
+    
+    // Cleanup: Clear current gig when component unmounts
+    return () => {
+      dispatch(clearCurrentGig())
+      dispatch(clearBids())
+    }
   }, [dispatch, id])
 
   useEffect(() => {
-    if (currentGig && user && currentGig.ownerId._id === user.id) {
-      dispatch(fetchBidsForGig(id))
+    if (currentGig && user) {
+      // Check if current user is the owner of this gig
+      const gigOwnerId = currentGig.ownerId?._id || currentGig.ownerId
+      const currentUserId = user.id || user._id
+      
+      if (gigOwnerId === currentUserId) {
+        // User is the owner, fetch bids
+        dispatch(fetchBidsForGig(id))
+      }
     }
   }, [currentGig, user, dispatch, id])
 
@@ -50,7 +63,7 @@ function GigDetails() {
     }
   }
 
-  if (gigLoading) {
+  if (gigLoading || !currentGig) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -58,16 +71,13 @@ function GigDetails() {
     )
   }
 
-  if (!currentGig) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-center text-gray-500">Gig not found</p>
-      </div>
-    )
-  }
-
-  const isOwner = user && currentGig.ownerId._id === user.id
+  // Properly check ownership
+  const gigOwnerId = currentGig.ownerId?._id || currentGig.ownerId
+  const currentUserId = user?.id || user?._id
+  const isOwner = user && gigOwnerId === currentUserId
   const canBid = isAuthenticated && !isOwner && currentGig.status === 'open'
+
+  console.log('Debug:', { gigOwnerId, currentUserId, isOwner, canBid })
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
